@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang=ko>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<h1>메모</h1>
+<input id=t>
+<button onclick="add()">추가</button>
+<ul id=l></ul>
+<script>
+const { createClient } = supabase;
+const db = createClient("https://fkxeedrjnhltmymoecvu.supabase.co", "sb_publishable_113kIZJASV6sD8yJIdQ6Eg_QSdnjKUx");
+
+async function init() {
+    await db.auth.signInAnonymously();
+    loadFromSupabase();
+}
+
+async function add() {
+    const memoText = t.value;
+    if (memoText) {
+        await db.from('memos').insert([{ text: memoText }]);
+        let li = document.createElement('li');
+        li.textContent = memoText;
+        l.appendChild(li);
+        t.value = '';
+    }
+}
+
+async function loadFromSupabase() {
+    const { data: items, error } = await db.from('memos').select('text');
+    if (error) {
+        console.error(error);
+        return;
+    }
+    items.forEach(item => {
+        let li = document.createElement('li');
+        li.textContent = item.text;
+        l.appendChild(li);
+    });
+}
+
+init();
+</script>
+</body>
+</html>
