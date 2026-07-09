@@ -22,6 +22,14 @@
     <div id="agent-out" class="out"></div>
 </section>
 
+<!-- + RAG: 메모를 벡터 검색해서 질문에 답 (Supabase pgvector) -->
+<section class="agent">
+    <h2>🔎 메모에게 물어보기 (RAG · 벡터 검색)</h2>
+    <input id="q" placeholder="예: 테스트에 대해 뭐라고 썼지?" style="width:100%;box-sizing:border-box;margin-bottom:6px">
+    <button id="btn-ask" type="button">질문</button>
+    <div id="ask-out" class="out"></div>
+</section>
+
 <script>
 const { createClient } = supabase;
 let db;  // /api/config 에서 URL·키를 받아온 뒤 생성 (키를 코드에 안 넣기 위함)
@@ -38,15 +46,19 @@ async function init() {
 }
 
 async function add() {
-    if (!db) return;  // 연결 준비 전 클릭 방지
-    const memoText = t.value;
-    if (memoText) {
-        await db.from('memos').insert([{ text: memoText }]);
-        let li = document.createElement('li');
-        li.textContent = memoText;
-        l.appendChild(li);
-        t.value = '';
-    }
+    const memoText = t.value.trim();
+    if (!memoText) return;
+    // 서버(/api/add)가 임베딩을 만들어 Supabase(pgvector)에 저장 — 그래야 나중에 벡터 검색 가능
+    const r = await fetch("/api/add", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: memoText })
+    });
+    if (!r.ok) { alert("메모 저장 실패"); return; }
+    let li = document.createElement('li');
+    li.textContent = memoText;
+    l.appendChild(li);
+    t.value = '';
 }
 
 async function loadFromSupabase() {
@@ -87,6 +99,32 @@ $btn.addEventListener("click", async () => {
         console.error(e);
     } finally {
         $btn.disabled = false;
+    }
+});
+
+// + RAG 호출: 질문만 서버로 → 서버가 벡터 검색 후 답변. 검색·생성 모두 서버에서.
+const $ask = document.getElementById("btn-ask");
+const $askOut = document.getElementById("ask-out");
+$ask.addEventListener("click", async () => {
+    const question = document.getElementById("q").value.trim();
+    if (!question) { $askOut.textContent = "질문을 입력해줘."; return; }
+    $ask.disabled = true; $askOut.textContent = "메모 검색 중...";
+    try {
+        const r = await fetch("/api/ask", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ question })
+        });
+        if (!r.ok) throw new Error("서버 오류: " + r.status);
+        const { answer, used } = await r.json();
+        $askOut.textContent = answer + (used && used.length ? "\n\n📎 근거 메모:\n- " + used.join("\n- ") : "");
+        $askOut.classList.remove("err");
+    } catch (e) {
+        $askOut.textContent = "답을 못 했어. 잠시 후 다시 시도해줘.";
+        $askOut.classList.add("err");
+        console.error(e);
+    } finally {
+        $ask.disabled = false;
     }
 });
 </script>
