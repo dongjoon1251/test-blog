@@ -24,14 +24,17 @@
 
 <script>
 const { createClient } = supabase;
-const db = createClient("https://.supabase.co", "sb_publishable_");
+let db;  // /api/config 에서 URL·키를 받아온 뒤 생성 (키를 코드에 안 넣기 위함)
 
 async function init() {
+    const { url, anonKey } = await (await fetch("/api/config")).json();
+    db = createClient(url, anonKey);
     await db.auth.signInAnonymously();
     loadFromSupabase();
 }
 
 async function add() {
+    if (!db) return;  // 연결 준비 전 클릭 방지
     const memoText = t.value;
     if (memoText) {
         await db.from('memos').insert([{ text: memoText }]);
