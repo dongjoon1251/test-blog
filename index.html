@@ -2,12 +2,26 @@
 <html lang=ko>
 <head>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .agent { margin-top: 24px; padding: 14px; border: 1px dashed #ff7a3d; border-radius: 8px; background: #fff8f3; max-width: 480px; }
+        .agent h2 { font-size: 15px; margin: 0 0 8px; }
+        .agent .out { white-space: pre-wrap; font-size: 14px; line-height: 1.55; margin-top: 10px; min-height: 20px; color: #444; }
+        .agent .err { color: #c33; }
+    </style>
 </head>
 <body>
 <h1>메모 2</h1>
 <input id=t>
 <button onclick="add()">추가</button>
 <ul id=l></ul>
+
+<!-- + 에이전트: 지금까지 쓴 메모를 요약해 위로 한마디 -->
+<section class="agent">
+    <h2>🤖 메모 요약 · 위로 한마디</h2>
+    <button id="btn-agent" type="button">요약해줘</button>
+    <div id="agent-out" class="out"></div>
+</section>
+
 <script>
 const { createClient } = supabase;
 const db = createClient("https://.supabase.co", "sb_publishable_");
@@ -42,6 +56,32 @@ async function loadFromSupabase() {
 }
 
 init();
+
+// + 에이전트 호출: 프론트는 서버 함수만 호출. API 키는 서버에만 존재.
+const $btn = document.getElementById("btn-agent");
+const $out = document.getElementById("agent-out");
+$btn.addEventListener("click", async () => {
+    const notes = [...l.querySelectorAll("li")].map(li => li.textContent);
+    if (notes.length === 0) { $out.textContent = "먼저 메모를 하나라도 남겨봐."; return; }
+    $btn.disabled = true; $out.textContent = "생각 중...";
+    try {
+        const r = await fetch("/api/agent", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ notes })
+        });
+        if (!r.ok) throw new Error("서버 오류: " + r.status);
+        const { reply } = await r.json();
+        $out.textContent = reply;
+        $out.classList.remove("err");
+    } catch (e) {
+        $out.textContent = "에이전트가 답을 못 했어. 잠시 후 다시 시도해줘.";
+        $out.classList.add("err");
+        console.error(e);
+    } finally {
+        $btn.disabled = false;
+    }
+});
 </script>
 </body>
 </html>
