@@ -22,3 +22,6 @@ $$;
 -- 4) 서버 함수(/api/add)가 anon 키로 insert 할 수 있게 허용
 --    (기존 정책은 authenticated만 insert 가능 → 서버는 익명 세션이 없어 막힘)
 create policy "Enable insert for anon (workshop)" on memos for insert to anon with check (true);
+
+-- 5) 정책(RLS)만으론 부족 — anon 역할에 테이블 INSERT 권한(GRANT)도 필요
+grant insert on table memos to anon;

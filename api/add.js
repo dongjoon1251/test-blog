@@ -15,7 +15,8 @@ export default async function handler(req, res) {
 
   try {
     const emb = await openai.embeddings.create({ model: "text-embedding-3-small", input: text });
-    const embedding = emb.data[0].embedding;
+    // pgvector 컬럼엔 배열이 아니라 "[0.1,0.2,...]" 문자열로 넣어야 PostgREST가 캐스팅한다
+    const embedding = JSON.stringify(emb.data[0].embedding);
     const { error } = await supa.from("memos").insert([{ text, embedding }]);
     if (error) throw error;
     res.status(200).json({ ok: true });
