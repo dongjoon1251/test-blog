@@ -1,12 +1,12 @@
 // Vercel Serverless Function — /api/add
 // 메모를 저장할 때 OpenAI 임베딩을 만들어 Supabase(pgvector)에 함께 넣는다.
-// 서버 전용 SERVICE_ROLE 키 사용 — 절대 프론트로 안 나감(진짜 비밀).
+// 임베딩은 OpenAI 키가 필요해 서버에서만 만든다 → 그래서 insert도 서버 함수로.
 
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });

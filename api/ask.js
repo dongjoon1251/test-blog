@@ -1,12 +1,12 @@
 // Vercel Serverless Function — /api/ask  (RAG: 벡터 검색 + 답변)
 // 1) 질문을 임베딩 → 2) Supabase pgvector 유사도 검색(match_memos) → 3) 찾은 메모만 근거로 답변.
-// 서버 전용 SERVICE_ROLE 키 사용 — 프론트로 안 나감.
+// OpenAI 키는 서버에만. Supabase는 anon 키로 검색(match_memos는 공개 SELECT).
 
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });

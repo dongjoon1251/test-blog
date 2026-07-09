@@ -18,3 +18,7 @@ as $$
   order by m.embedding <=> query_embedding
   limit match_count;
 $$;
+
+-- 4) 서버 함수(/api/add)가 anon 키로 insert 할 수 있게 허용
+--    (기존 정책은 authenticated만 insert 가능 → 서버는 익명 세션이 없어 막힘)
+create policy "Enable insert for anon (workshop)" on memos for insert to anon with check (true);
