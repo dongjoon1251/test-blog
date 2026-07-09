@@ -28,6 +28,10 @@ let db;  // /api/config 에서 URL·키를 받아온 뒤 생성 (키를 코드�
 
 async function init() {
     const { url, anonKey } = await (await fetch("/api/config")).json();
+    if (!url || !anonKey) {
+        alert("Supabase 설정이 없어요. Vercel 대시보드에 SUPABASE_URL, SUPABASE_ANON_KEY 를 등록하고 재배포하세요.");
+        return;
+    }
     db = createClient(url, anonKey);
     await db.auth.signInAnonymously();
     loadFromSupabase();
